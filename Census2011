@@ -1,0 +1,184 @@
+SELECT * FROM census2011.`census dataset1`;
+SELECT * FROM census2011.`census dataset 2`;
+
+-- number of rows into our dataset
+Select count(*) from census2011.`census dataset1`
+Select count(*) from census2011.`census dataset 2`
+
+
+-- dataset for jharkhand and bihar
+select * from census2011.`census dataset1` where state in ('Jharkhand' , 'Bihar')
+
+
+-- population of India
+select * from census2011.`census dataset 2` 
+select sum(population) from census2011.`census dataset 2` 
+
+
+
+SELECT * FROM census2011.`census dataset1`;
+
+
+-- average growth
+select avg(growth) as avg_growth from census2011.`census dataset1`
+
+
+-- avg growth by state
+Select state, avg(growth) as avg_growth from census2011.`census dataset1` group by state;
+
+
+-- avg sex ratio
+Select state, round(avg(Sex_Ratio),0) as Sex_Ratio from census2011.`census dataset1` group by state;
+
+
+-- Avg sex ration in descending order 
+Select state, round(avg(Sex_Ratio),0) as Sex_Ratio from census2011.`census dataset1` group by state order by Sex_Ratio Desc;
+
+
+-- avg Literacy Rate
+Select state, round(avg(Literacy),0) as Avg_Literacy  from census2011.`census dataset1` 
+group by state having round(avg(Literacy),0)>90 order by Avg_Literacy Desc;
+
+
+-- top 3 state showing highest growth ratio
+select state, round(avg(growth),0) as avg_growth from census2011.`census dataset1` group by state order by avg_growth Desc Limit 3;
+ 
+
+-- bottom 3 state showing Lowest Sex ratio
+select state, round(avg(Sex_ratio),0) as avg_sex_ratio from census2011.`census dataset1` group by state order by avg_sex_ratio ASC Limit 3;
+
+
+-- top and bottom 3 states in Literacy Rate
+drop table if exists topstates;
+Create database Adi;
+use Adi;
+Create table topstates
+( state nvarchar(255),
+topstates float
+
+);
+INSERT INTO topstates
+Select state, round(avg(Literacy),0) avg_literacy_ratio from census2011.`census dataset1` 
+group by state order by avg_literacy_ratio desc;
+select * From topstates order by topstates.topstates desc;
+
+
+
+ drop table if exists bottomstates;
+Create database Adi;
+use Adi;
+Create table bottomstates
+( state nvarchar(255),
+bottomstates float
+
+);
+INSERT INTO bottomstates
+Select state, round(avg(Literacy),0) avg_literacy_ratio from census2011.`census dataset1` 
+group by state order by avg_literacy_ratio desc;
+select * From bottomstates order by bottomstates.bottomstates Asc Limit 3;
+
+
+-- union operator 
+Select * from (
+ select * From topstates order by topstates.topstates desc Limit 3) a 
+ union
+ select * from (
+ select * From bottomstates order by bottomstates.bottomstates Asc Limit 3) b;
+ 
+ 
+ -- states starting with letter A 
+ select Distinct state from census2011.`census dataset1` where Upper(state) like 'a%'; 
+ 
+  -- states starting with letter A  or B
+ select Distinct state from census2011.`census dataset1` where Upper(state) like 'a%' or Upper(state) like 'b%'; 
+ 
+ 
+ -- state staring with a and ending with m
+select Distinct state from census2011.`census dataset1` where Upper(state) like 'a%' and Upper(state) like '%m'; 
+
+ 
+  
+
+SELECT * FROM census2011.`census dataset1`;
+SELECT * FROM census2011.`census dataset 2`;
+
+
+-- Joining both table 
+SELECT a.district, a.state, a.sex_ratio, b.population from census2011.`census dataset1`a inner join census2011.`census dataset 2` b on a.district=b.district;
+
+
+-- Calculation of total No. of males & no of females district wise
+
+select c.district,c.state,round(c.population/(c.sex_ratio+1),0) males,round(c.population*(c.sex_ratio)/(c.sex_ratio+1),0) females from
+(SELECT a.district, a.state, a.sex_ratio/1000 sex_ratio, b.population from census2011.`census dataset1`a inner join census2011.`census dataset 2` b on a.district=b.district) c;
+
+
+-- Calculation of total No. of males & no of females State wise
+
+select d.state, sum(d.males)Total_males , sum(d.females) Total_females from
+(select c.district,c.state,round(c.population/(c.sex_ratio+1),0) males,round(c.population*(c.sex_ratio)/(c.sex_ratio+1),0) females from
+(SELECT a.district, a.state, a.sex_ratio/1000 sex_ratio, b.population from census2011.`census dataset1`a inner join census2011.`census dataset 2` b on a.district=b.district) c) d
+group by d.state;
+
+
+
+-- Total Literacy rate by district wise
+select d.district,d.state,round((d.literacy_ratio*d.population),0) literate_people, round((1-d.literacy_ratio)*d.population,0)illiterate_people from
+(SELECT a.district, a.state, a.literacy/100 literacy_ratio, b.population from census2011.`census dataset1`a inner join census2011.`census dataset 2` b on a.district=b.district) d;
+
+
+-- Total Literacy rate by state wise
+select c.state,sum(literate_people) Total_literate_people, sum(illiterate_people) Total_illiterate_people from 
+(select d.district,d.state,round((d.literacy_ratio*d.population),0) literate_people, round((1-d.literacy_ratio)*d.population,0)illiterate_people from
+(SELECT a.district, a.state, a.literacy/100 literacy_ratio, b.population from census2011.`census dataset1`a inner join census2011.`census dataset 2` b on a.district=b.district) d) c
+group by c.state;
+
+
+
+-- population in previous census district wise
+select c.district, c.state,round(c.population/(1+c.growth),0) previous_census_population,c.population current_census_population from
+(SELECT a.district, a.state, a.growth/100 growth, b.population from census2011.`census dataset1`a inner join census2011.`census dataset 2` b on a.district=b.district) c;
+
+
+
+-- population in previous census state wise
+select d.state, sum(d.previous_census_population) previous_census_population, sum(d.current_census_population) current_census_population from
+(select c.district,c.state,round(c.population/(1+c.growth),0) previous_census_population,c.population current_census_population from
+(SELECT a.district, a.state, a.growth/100 growth, b.population from census2011.`census dataset1`a inner join census2011.`census dataset 2` b on a.district=b.district) c) d
+group by d.state;
+
+
+-- Total Po[ulation in India 
+select sum(m.previous_census_population), sum(m.current_census_population) from (
+select d.state, sum(d.previous_census_population) previous_census_population, sum(d.current_census_population) current_census_population from
+(select c.district,c.state,round(c.population/(1+c.growth),0) previous_census_population,c.population current_census_population from
+(SELECT a.district, a.state, a.growth/100 growth, b.population from census2011.`census dataset1`a inner join census2011.`census dataset 2` b on a.district=b.district) c) d
+group by d.state)m
+
+
+
+-- Population vs area
+select (g.Total_area/g.previous_census_population) as previous_census_population_vs_area,(g.Total_area/g.current_census_population)as 
+current_census_population_vs_area from
+
+(SELECT q.*, r.Total_area from(
+
+select '1' as keyy,n.* from
+(select sum(m.previous_census_population) previous_census_population, sum(m.current_census_population) current_census_population from(
+select d.state, sum(d.previous_census_population) previous_census_population, sum(d.current_census_population) current_census_population from
+(select c.district,c.state,round(c.population/(1+c.growth),0) previous_census_population,c.population current_census_population from
+(SELECT a.district, a.state, a.growth/100 growth, b.population from census2011.`census dataset1`a inner join census2011.`census dataset 2` b on a.district=b.district) c) d
+group by d.state)m) n) q inner join (
+
+select '1' as keyy, z.* from (
+select sum(area_km2) Total_area from census2011.`census dataset 2`)z)r on q.keyy = r.keyy)g
+
+
+
+
+
+-- Window Function
+-- output top 3 districts from each state with highest literacy rate
+select a.* from 
+(select district, state, literacy, rank() over(partition by state order by literacy desc ) rnk from census2011.`census dataset1`) a
+where a.rnk in (1,2,3) order by state
